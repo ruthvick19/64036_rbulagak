@@ -1,0 +1,91 @@
+---
+title: "BA64036_Assignment1"
+author: "Ruthvick Bulagakula"
+date: "2023-09-29"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+The purpose of this assignment is to set up and use the tools for this course.
+
+## Instructions
+
+1. Install the ISLR library using the install.packages() command. Call the library using the
+library(ISLR) command to ensure that the library is correctly installed (10% of total points)
+
+
+**Calling Installed Library**
+
+```{r}
+
+# If i use install.packages() command rmd file is failing to knit. 
+# so, i've removed install.packages() command
+
+library(ISLR) # Using Library to call installed ISLR library
+
+```
+
+2. Create a new R-Notebook (.Rmd) file. In the first code chunk, call the ISLR library and then print the summary of the Carseats dataset. How many observations (rows) this dataset contains? (15% of total points)
+
+**Using Careseats Dataset**
+
+```{r}
+
+summary(Carseats) # Using Summary function to get descriptive statistics of Carseats dataset
+
+```
+
+**No.of Observations in carseats dataset**
+
+```{r}
+
+nrow(Carseats) # Using nrow function to get no of rows in Carsearts dataset
+
+
+```
+3. Using the summary statistics shown above, what is maximum value of the advertising attribute? (15% of total points)
+
+**Maximum Values of the advertising**
+
+```{r}
+
+max(Carseats$Advertising) # Using max function to get maximum value of advertising
+
+```
+4. Calculate the IQR of the Price attribute. (15% of total points)
+
+**IQR for Price**
+
+```{r}
+
+IQR(Carseats$Price) # Using IQR function to get Interquartile Range for Price
+
+```
+5. Plot the Sales against Price. What do you see in there? Calculate the correlation of the two attributes. What does the sign of the correlation coefficient suggest? (15% of total points)
+
+**Plotting Sales againt Price**
+
+```{r}
+
+# Using plot function to get scatterplot for Price againt Sales
+plot(Carseats$Price, Carseats$Sales, xlab = "Price", ylab = "Sales", main = "Price VS Sales", col = "Blue") 
+
+```
+
+**Correlation coefficient for price and sales**
+
+```{r}
+
+cor(Carseats$Price, Carseats$Sales) # Using cor function to Price and Sales correlation
+
+```
+
+
