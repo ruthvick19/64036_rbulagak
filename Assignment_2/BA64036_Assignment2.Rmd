@@ -1,0 +1,265 @@
+---
+title: "BA64036_Assignment2"
+author: "Ruthvick Bulagakula"
+date: "2023-10-12"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(lubridate)
+
+```
+
+```{r}
+
+data = read.csv("C:/Users/ruthvick/Desktop/Rhistory/Online_Retail.csv")
+
+head(data)
+
+tail(data)
+
+```
+1. Show the breakdown of the number of transactions by countries i.e., how many transactions are in the dataset for each country (consider all records including cancelled transactions). Show this in total number and also in percentage. Show only countries accounting for more than 1% of the total transactions. (10% of total points)
+
+```{r}
+
+country_count = data %>% group_by(Country) %>% count(Country)
+
+country_count
+
+country_percentage = data %>% group_by(Country) %>% summarise(Percentage = 100* n()/nrow(data))
+
+country_percentage
+
+filter = filter(country_percentage, Percentage>1)
+
+filter
+
+```
+
+2. Create a new variable ‘TransactionValue’ that is the product of the exising ‘Quantity’ and ‘UnitPrice’ variables. Add this variable to the dataframe. (10% of total points)
+
+```{r}
+
+data$TransactionValue = data$Quantity * data$UnitPrice
+
+head(data$TransactionValue)
+
+```
+3. Using the newly created variable, TransactionValue, show the breakdown of transaction values by countries i.e. how much money in total has been spent each country. Show this in total sum of transaction values. Show only countries with total transaction exceeding 130,000 British Pound. (15% of total points)
+
+```{r}
+
+country_transaction = data %>% group_by(Country) %>% summarise(Sum_Transaction=sum(TransactionValue))
+
+
+filtered_country_transaction = filter(country_transaction, country_transaction$Sum_Transaction>13000)
+
+filtered_country_transaction
+
+
+```
+4. This is an optional question which carries additional marks (golden questions). In this question, we are dealing with the InvoiceDate variable. The variable is read as a categorical when you read data from the file. Now we need to explicitly instruct R to interpret this as a Date variable. "POSIXlt" and "POSIXct" are two powerful object classes in R to deal with date and time. Click here for more information. First let’s convert ‘InvoiceDate’ into a POSIXlt object: Temp=strptime(Online_Retail$InvoiceDate,format='%m/%d/%Y %H:%M',tz='GMT') Check the variable using, head(Temp). Now, let’s separate date, day of the week and hour components dataframe with names as New_Invoice_Date, Invoice_Day_Week and New_Invoice_Hour: Online_Retail$New_Invoice_Date <- as.Date(Temp) The Date objects have a lot of flexible functions. For example knowing two date values, the object allows you to know the difference between the two dates in terms of the number days. Try this: Online_Retail$New_Invoice_Date[20000]- Online_Retail$New_Invoice_Date[10] Also we can convert dates to days of the week. Let’s define a new variable for that Online_Retail$Invoice_Day_Week= weekdays(Online_Retail$New_Invoice_Date) For the Hour, let’s just take the hour (ignore the minute) and convert into a normal numerical
+value: Online_Retail$New_Invoice_Hour = as.numeric(format(Temp, "%H")) Finally, lets define the month as a separate numeric variable too: Page 3 Online_Retail$New_Invoice_Month = as.numeric(format(Temp, "%m"))
+
+```{r}
+
+Temp = strptime(data$InvoiceDate, format = '%m/%d/%Y %H:%M', tz = 'GMT')
+data$New_Invoice_Date = as.Date(Temp)
+data$Invoice_Day_Week = weekdays(data$New_Invoice_Date)
+data$New_Invoice_Hour = as.numeric(format(Temp, "%H"))
+data$New_Invoice_Month = as.numeric(format(Temp, "%m"))
+```
+
+```{r}
+
+head(data)
+
+
+```
+a. Show the percentage of transactions (by numbers) by days of the week (extra 1% of total
+points)
+```{r}
+
+day_per = data %>% group_by(Invoice_Day_Week) %>% summarise(Percentage = 100* n()/nrow(data))
+
+day_per
+
+```
+b. Show the percentage of transactions (by transaction volume) by days of the week (extra 1%
+of total points)
+
+```{r}
+
+day_transaction = data %>% group_by(Invoice_Day_Week) %>% summarise(Percentage= sum(TransactionValue))
+
+day_transaction_per = 100*(day_transaction$Percentage)/sum(day_transaction$Percentage)
+
+day_transaction$Percentage = day_transaction_per
+
+day_transaction
+
+```
+
+c. Show the percentage of transactions (by transaction volume) by month of the year (extra 2% of total points)
+
+```{r}
+
+
+month_transaction = data %>% 
+  group_by(New_Invoice_Month) %>% 
+  summarise(Monthly_Transaction = sum(TransactionValue))
+
+month_transaction$New_Invoice_Month = month(month_transaction$New_Invoice_Month, label = TRUE)
+
+month_transaction_per = 100 * (month_transaction$Monthly_Transaction) / sum(month_transaction$Monthly_Transaction)
+
+month_transaction$Monthly_Transaction = month_transaction_per
+
+month_transaction
+
+```
+
+d. What was the date with the highest number of transactions from Australia? (extra 2% of total
+points)
+
+```{r}
+
+australia = data %>% 
+filter(Country=='Australia')%>% group_by(New_Invoice_Date)%>%
+summarise(Number=sum(Quantity),amount=sum(TransactionValue))%>%
+arrange(desc(Number))
+
+date_highest_transactions = australia$New_Invoice_Date[which.max(table(australia$New_Invoice_Date))]
+
+print(paste("Date which has highest number of transations from australia is", date_highest_transactions))
+
+
+```
+e. The company needs to shut down the website for two consecutive hours for maintenance.
+What would be the hour of the day to start this so that the distribution is at minimum for the customers? The responsible IT team is available from 7:00 to 20:00 every day. (extra 4% of total points)
+
+```{r}
+
+hour_transaction_data = data %>% group_by(New_Invoice_Hour) %>% summarize(Count = n()) %>% filter(New_Invoice_Hour >= 7 & New_Invoice_Hour <= 20) %>% arrange(Count)
+
+optimal_start_hour = hour_transaction_data %>% slice(1) %>% pull(New_Invoice_Hour)
+
+optimal_start_hour2 = ifelse(optimal_start_hour == 20, optimal_start_hour - 1, optimal_start_hour + 1)
+
+start_of_maintenance = paste(optimal_start_hour, ":00", sep = "")
+end_of_maintenance = paste(optimal_start_hour2, ":00", sep = "")
+
+cat("Start of maintaince should be",start_of_maintenance,"P.M and end of maintance should be",end_of_maintenance, "P.M")
+
+
+```
+5. Plot the histogram of transaction values from Germany. Use the hist() function to plot. (5% of total points)
+```{r}
+
+germany = data[data$Country == "Germany", ]
+
+hist(germany$TransactionValue, main = "Transaction Values in Germany", xlab = "Transaction Value")
+
+
+```
+6. Which customer had the highest number of transactions? Which customer is most valuable (i.e.
+highest total sum of transactions)? (15% of total points)
+
+```{r}
+
+customer_highest_transaction =data  %>% group_by(CustomerID)%>%
+summarise(CustomerTransaction = n())%>% filter(CustomerID != "NA")%>% filter(CustomerTransaction ==max(CustomerTransaction) )
+
+cat("Customer who had highest number of transactions is",customer_highest_transaction$CustomerID)
+
+
+customer_transaction_total = data %>% group_by(CustomerID)%>%
+summarise(total.transaction.by.each.customer = sum(TransactionValue))%>% arrange(desc(total.transaction.by.each.customer))%>%
+filter(CustomerID != "NA")%>% filter(total.transaction.by.each.customer ==max(total.transaction.by.each.customer) )
+
+cat("\nCustomer who is most valuable is", customer_transaction_total$CustomerID)
+
+```
+7. Calculate the percentage of missing values for each variable in the dataset (5% of total points). Hint colMeans():
+
+```{r}
+
+missing_percentage = colMeans(is.na(data)) * 100
+
+missing_percentage
+
+
+```
+8. What are the number of transactions with missing CustomerID records by countries? (10 % of total points)
+
+```{r}
+
+missing_customer_transaction = data[is.na(data$CustomerID), ]
+missing_customer_counts_country = table(missing_customer_transaction$Country)
+
+missing_customer_counts_country
+
+
+```
+9. On average, how often the costumers comeback to the website for their next shopping? (i.e. what is the average number of days between consecutive shopping) (5% of total points!) Hint: 1. A close approximation is also acceptable and you may find diff() function useful.
+
+```{r}
+
+
+time_diff = data %>% 
+  group_by(CustomerID) %>%
+  mutate(difference.in.consecutivedays = c(0, diff(New_Invoice_Date))) %>%
+  filter(difference.in.consecutivedays > 0) %>%
+  ungroup()
+
+average_time_diff = mean(time_diff$difference.in.consecutivedays)
+
+cat("On an average customer customers comeback to the websire for their next shopping is after",average_time_diff, "days")
+
+
+
+```
+10. n the retail sector, it is very important to understand the return rate of the goods purchased by customers. In this example, we can define this quantity, simply, as the ratio of the number of transactions cancelled (regardless of the transaction value) over the total number of transactions. page 4 with this definition, what is the return rate for the French customers? (10% of total points). Consider the cancelled transactions as those where the ‘Quantity’ variable has a negative value.
+
+```{r}
+
+french_data = filter(data, Country == "France" )
+
+return_rate = nrow(filter(french_data, Quantity<1)) / nrow(french_data)
+
+cat("Return rate of french customers is",return_rate)
+
+
+```
+11. What is the product that has generated the highest revenue for the retailer? (i.e. item with the highest total sum of ‘TransactionValue’). (10% of total points)
+
+```{r}
+
+product_revenue = data %>% group_by(StockCode) %>% summarise(sum = sum(TransactionValue))
+
+highest_stock = product_revenue[which.max(product_revenue$sum), ]
+
+cat(highest_stock$StockCode, "has highest revenue for the retailer which is around", highest_stock$sum)
+
+
+
+```
+12. How many unique customers are represented in the dataset? You can use unique() and length()functions. (10% of total points)
+
+```{r}
+
+unique_customers = length(unique(data$CustomerID))
+
+cat("Unique customer in dataset is",unique_customers)
+
+
+```
