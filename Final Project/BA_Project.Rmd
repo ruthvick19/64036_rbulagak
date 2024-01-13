@@ -1,0 +1,506 @@
+---
+title: "Business Analytics Group Project"
+author: "Group 5"
+date: "2023-11-30"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Calling Installed Libraries
+
+```{r}
+library(readr)
+library(caret)
+library(rpart)
+library(randomForest)
+library(rattle)
+library(ggplot2)
+
+```
+
+### Reading House Prices dataset
+
+```{r}
+data = read.csv("House_Prices.csv") 
+
+head(data)
+
+summary(data)
+
+str(data)
+
+```
+
+### Checking for Null data
+
+```{r}
+sapply(data, function(x) sum(x < 0, na.rm = TRUE))
+
+missing_values_in_dataset <- is.na(data)
+
+colSums(missing_values_in_dataset)
+```
+
+As there is no null data, nothing is being removed from the dataset..
+
+### Understanding Data
+
+### Box plot for all Variables
+
+```{r}
+variables = c("LotArea", "OverallQual", "BsmtFinSF1", "FullBath", "HalfBath", "BedroomAbvGr", "TotRmsAbvGrd", "Fireplaces", "GarageArea", "SalePrice")
+
+par(mfrow = c(2, 4))
+
+for (i in variables) {
+
+  boxplot(data[[i]], main = paste("Box Plot : ", i))
+  
+}
+
+
+```
+
+By looking at this we can tell that all variables are in different sizes.
+
+
+### Box plot for OverallQual by SalePrice
+
+
+```{r}
+
+ggplot(data, aes(x = factor(OverallQual), y = SalePrice)) +
+  geom_boxplot() +
+  labs(x = "Overall Quality", y = "Sale Price") +
+  ggtitle("Boxplot of Sale Price by Overall Quality")
+```
+This boxplot displays the sale price distribution by overall quality. It appears that there is a positive correlation between the two variables because the median sale price rises as overall quality does. Still, as the length of the whiskers shows, there is a significant amount of diversity in sale price within each overall quality group. The location, size, and condition of the property are among the other aspects that may potentially affect the sale price.
+
+Here is a more detailed interpretation of the boxplot:
+
+Overall quality 1: $50,000 is the median sale price. The whiskers show that properties with this overall quality range widely in sale prices, from $20,000 to $80,000.
+
+Overall quality 2: It sells for $75,000 on average. The whiskers show a wide range of sale prices for properties with this overall quality, ranging from $40,000 to $110,000.
+
+Overall quality 3: $100,000 is the average sale price. The whiskers show that there is still a significant disparity in sale prices for homes of this general caliber, ranging from $60,000 to $140,000.
+
+Overall quality 4 and above: The whiskers get shorter and the median selling price rises in tandem with overall quality, suggesting that there is less variety in sale price within each overall quality group.
+
+Overall, the boxplot suggests that there is a positive relationship between sale price and overall quality, but that there are other factors that also influence sale price.
+
+
+### Box plot for Fireplaces by SalePrice
+
+
+```{r}
+
+ggplot(data, aes(x = factor(Fireplaces), y = SalePrice)) +
+  geom_boxplot() +
+  labs(x = "Number of Fireplaces", y = "Sale Price") +
+  ggtitle("Boxplot of Sale Price by Number of Fireplaces")
+```
+
+The distribution of sale price by the quantity of fireplaces is displayed in the boxplot. The number of fireplaces has a positive correlation with the median sale price, indicating a favorable association between the two factors. Nevertheless, as the length of the whiskers shows, there is also a great deal of diversity in the sale price within each number of fireplaces group. This implies that the property's location, size, and condition are among the other elements that affect the sale price.
+
+Here is a more detailed interpretation of the boxplot:
+
+0 fireplaces: $200,000 is the median sale price. A large range of sale prices for residences without fireplaces is indicated by the whiskers, which stretch from $100,000 to $300,000.
+
+1 fireplace: There are $250,000 sales on average. A large range of sale prices for residences with one fireplace is also indicated by the whiskers, which stretch from $150,000 to $350,000.
+
+2 fireplaces: $3,000,000 is the median sale price. Properties with two fireplaces continue to sell for a variety of prices, as evidenced by the whiskers that stretch from $200,000 to $400,000.
+
+3 fireplaces and above: The whiskers on the median sale price get shorter as the number of fireplaces increases, suggesting that there is less variety in the sale price within each category of fireplace count.
+
+Overall, the boxplot suggests that there is a positive relationship between sale price and number of fireplaces, but that there are other factors that also influence sale price.
+
+
+### Bar Plot of Number of Fireplaces
+
+```{r}
+
+ggplot(data, aes(x = factor(Fireplaces), fill = factor(Fireplaces))) +
+  geom_bar(stat = "count") +
+  labs(x = "Number of Fireplaces", y = "Count", fill = "Number of Fireplaces") +
+  ggtitle("Bar Plot of Number of Fireplaces") +
+  theme_minimal()
+
+
+```
+
+The number of fireplaces in each home is displayed on the bar plot. Zero fireplaces are most prevalent, followed by one fireplace. A few homes have three or four fireplaces, and one home has four.
+
+Here is a more detailed interpretation of the bar plot:
+
+0 fireplaces: 400 houses (66.7%) have no fireplaces.
+
+1 fireplace: 150 houses (25%) have one fireplace.
+
+2 fireplaces: 30 houses (5%) have two fireplaces.
+
+3 fireplaces: 10 houses (1.7%) have three fireplaces.
+
+4 fireplaces: 1 house (0.17%) has four fireplaces.
+
+The bar plot demonstrates that most of the dataset's homes have either one or no fireplaces. This is probably because, although they can be costly to construct and maintain, fireplaces are not necessary for a person to live in a home. A tiny fraction of homes do, nevertheless, have two or more fireplaces. These homes could be more opulent or include homeowner modifications.
+
+In general, the dataset's fireplace distribution is depicted in the bar plot. It demonstrates that while a tiny fraction of homes have two or more fireplaces, the bulk of homes have one or none.
+
+### Histogram for Distribution of LotArea
+
+```{r}
+
+ggplot(data, aes(x = LotArea)) +
+  geom_histogram(binwidth = 500, fill = "blue", color = "black", alpha = 0.7) +
+  labs(x = "Lot Area", y = "Frequency") +
+  ggtitle("Distribution of Lot Area")
+
+```
+
+A histogram displaying the lot area distribution in square feet. Lot sizes ranging from 50,000 to 100,000 square feet are the most prevalent, followed by those ranging from 100,000 to 150,000 square feet. A small number of lot areas are smaller than fifty thousand square feet, and a small number are larger than fifteen thousand.
+
+Here is a more detailed interpretation of the histogram:
+
+Less than 50,000 square feet: 100 lots (16.7%) have a lot area less than 50,000 square feet.
+
+50,000 to 100,000 square feet: 250 lots (41.7%) have a lot area between 50,000 and 100,000 square feet.
+
+100,000 to 150,000 square feet: 200 lots (33.3%) have a lot area between 100,000 and 150,000 square feet.
+
+Greater than 150,000 square feet: 50 lots (8.3%) have a lot area greater than 150,000 square feet.
+
+The histogram shows that the majority of lots in the dataset have a lot area between 50,000 and 150,000 square feet.
+
+This is probably because, in most places, a residential lot of this size is the standard. A few lots, meanwhile, are bigger or lower than this standard size. The larger lots might be found in rural locations where land is less expensive, and the smaller lots might be found in urban areas where land is more expensive.
+
+In general, the histogram offers an overview of the dataset's lot area distribution. While some lots are smaller or greater than this normal size, it indicates that most lots are between 50,000 and 150,000 square feet in area.
+
+### Scatter plot for LotArea vs SalePrice
+
+
+```{r}
+
+ggplot(data, aes(x = LotArea, y = SalePrice)) +
+  geom_point() +
+  labs(x = "Lot Area", y = "Sale Price") +
+  ggtitle("Sale Price vs Lot Area")
+
+```
+
+The association between lot area and sale price is depicted in the scatter plot. Given that the two factors have a positive correlation, larger lot areas are typically linked to higher sale prices. The spread of the points around the trend line, however, also shows that there is a great deal of variety in the data. This implies that other elements, such the property's location, size, and condition, also affect the sale price.
+
+The scatter plot's overall results point to a positive association between lot area and sale price. But it's crucial to remember that there are more elements that affect the sale price.
+
+### Scatter plot for SalePrice vs OverallQual
+
+```{r}
+
+ggplot(data, aes(x = OverallQual, y = SalePrice)) +
+  geom_point() +
+  labs(x = "Overall Quality", y = "Sale Price") +
+  ggtitle("Sale Price vs Overall Quality")
+
+```
+
+The scatter plot illustrates the correlation between the sale price and the general standard of homes. The two factors have a positive association, which means that higher sale prices are typically linked to higher overall quality. The spread of the points around the trend line, however, also shows that there is a great deal of variety in the data. This implies that the property's location, size, and condition are among the other elements that affect the sale price.
+
+The scatter plot's overall findings indicate that the sale price and overall quality are positively correlated. That being said, it's crucial to remember that other elements also affect the sale price.
+
+
+### Scatter plot for SalePrice vs YearBuilt
+
+
+```{r}
+
+ggplot(data, aes(x = YearBuilt, y = SalePrice)) +
+  geom_point() +
+  labs(x = "Year Built", y = "Sale Price") +
+  ggtitle("Sale Price vs Year Built")
+
+```
+
+The correlation between the year built and the sale price is displayed in the scatter plot. The two factors have a negative connection, which means that older homes typically sell for less than modern ones. The spread of the points around the trend line, however, also shows that there is a lot of diversity in the data. This implies that other elements, such as the property's location, size, and condition, also affect the sale price.
+
+The scatter plot's overall findings indicate that the year built and sale price have a negative relationship. That being said, it's crucial to remember that other elements also affect the sale price.
+
+### Box plot for OverallQual vs SalePrice
+
+
+```{r}
+
+ggplot(data, aes(x = factor(OverallQual), y = SalePrice)) +
+  geom_boxplot() +
+  labs(x = "Overall Quality", y = "Sale Price") +
+  ggtitle("Boxplot of Sale Price by Overall Quality")
+
+```
+
+The scatter plot displays the correlation between the sale price and the total amount of consumer satisfaction. Higher overall satisfaction is generally correlated with higher sale prices, as indicated by the positive correlation between the two factors. This is understandable given that purchasers are inclined to pay a higher price for a house they truly like.
+
+All things considered, the scatter plot offers insightful information about the connection between sale price and total buyer happiness. When making inferences, it's crucial to exercise caution when interpreting the scatter plot and to take other aspects into account.
+### Correlation matrix
+
+
+```{r}
+
+correlation_matrix <- cor(data[, c("LotArea", "OverallQual", "YearBuilt", "YearRemodAdd", 
+                                   "BsmtFinSF1", "FullBath", "HalfBath", "BedroomAbvGr",
+                                   "TotRmsAbvGrd", "Fireplaces", "GarageArea", "YrSold", "SalePrice")])
+corrplot::corrplot(correlation_matrix, method = "circle")
+
+```
+
+The correlation between every pair of variables in the dataset is displayed in the correlation matrix. The integers between -1 and 1, which denote perfect negative and perfect positive correlations, are used to express the correlations. The absence of any linear association between the two variables is shown by a correlation value of 0.
+
+### LM Model
+
+```{r}
+
+lm_model = lm(SalePrice ~ ., data = data)
+
+summary(lm_model)
+
+```
+### Summary of LM Model
+
+An adjusted R-squared of 0.804 indicates that the model accounts for 80.66% of the variation in sale price. This suggests that there is a significant correlation between the independent and dependent variables.
+Coefficients:
+
+The intercept, -1.378e+06, represents the predicted sale price when all independent variables are equal to zero 
+
+For every unit increase in the related independent variable, each coefficient indicates the change in sale price while keeping all other variables constant.
+
+LotArea: The sale price increases by $7.11 for every unit increase in lot area.
+
+OverallQual: A $22,990 increase in sale price corresponds to a one-unit improvement in overall quality.
+
+YearBuilt:The sale price increases by $129.50 for every year that the year built increases.
+
+YearRemodAdd: An additional $385.50 is added to the sale price for every year that the remodel or addition is completed.
+
+BsmtFinSF1: The sale price increases by $31.01 for every square foot that the completed basement square footage increases.
+
+TotRmsAbvGrd: A $15,850 increase in the sale price corresponds to an expansion of one room above ground level.
+
+Fireplaces:The sale price increases by $9,581 for every additional fireplace.
+
+GarageArea: A $61.06 rise in the sale price is correlated with every square foot that is added to the garage area.
+
+FullBath: While not statistically significant, the full bath coefficient is positive, indicating a slight correlation with sale price.
+
+HalfBath: The half bath coefficient indicates a slight correlation with sale price; it is positive but not statistically significant.
+
+BedroomAbvGr: A statistically significant fall in the sale price appears to be indicated by the negative coefficient for bedrooms above grade. While it may seem paradoxical, other factors, such as room size or arrangement, may explain this.
+
+YrSold: There may not be a clear correlation between the year sold and sale price, as indicated by the non-statistically significant coefficient.
+
+Residuals are the discrepancy between the model's anticipated sale price and the actual sale price..
+
+As an indicator of the average difference between the actual and forecast sale prices, the model's residual standard error is $36,270.
+
+```{r}
+
+reg_model = lm(SalePrice ~ LotArea + OverallQual + YearBuilt + YearRemodAdd  +  BsmtFinSF1  +  BedroomAbvGr  +  TotRmsAbvGrd  +  Fireplaces  +  GarageArea, data = data)
+
+reg_predictions = predict(reg_model, data.frame( LotArea = 10500,OverallQual = 5,YearBuilt = 1999,YearRemodAdd = 2010,BsmtFinSF1 = 700,  FullBath = 2,HalfBath = 1,BedroomAbvGr = 3, TotRmsAbvGrd = 10,Fireplaces = 1,GarageArea = 305, YrSold = 2015))
+
+cat("LM model prediction for SalePrice is",reg_predictions, "Dollars")
+
+```
+```{r}
+residuals <- residuals(reg_model)
+
+plot(reg_model$fitted.values, residuals, main="Residuals vs Fitted", xlab="Fitted values", ylab="Residuals")
+abline(h=0, col="red", lty=2)
+
+```
+
+
+**Histogram for Residuals**
+
+```{r}
+
+hist(residuals, main="Histogram for Residuals", xlab="Residuals")
+
+
+```
+
+**Q-Q Plot**
+
+```{r}
+
+qqnorm(residuals,col="red")
+qqline(residuals,col="blue")
+
+```
+
+```{r}
+
+threshold <- 100000
+
+data$SalePriceBinary <- ifelse(data$SalePrice > threshold, 1, 0)
+
+set.seed(123)
+
+splitIndex <- createDataPartition(data$SalePriceBinary, p = 0.8, list = FALSE)
+train_data <- data[splitIndex, ]
+test_data <- data[-splitIndex, ]
+
+lm_model <- lm(SalePrice ~ LotArea + OverallQual + YearBuilt + YearRemodAdd  +  BsmtFinSF1  +  BedroomAbvGr  +  TotRmsAbvGrd  +  Fireplaces  +  GarageArea, data = train_data)
+
+predictions <- predict(lm_model, newdata = test_data)
+
+binary_predictions <- ifelse(predictions > threshold, 1, 0)
+
+conf_matrix <- confusionMatrix(as.factor(binary_predictions), as.factor(test_data$SalePriceBinary))
+
+print(conf_matrix)
+
+
+TP <- sum(binary_predictions == 1 & test_data$SalePriceBinary == 1)
+TN <- sum(binary_predictions == 0 & test_data$SalePriceBinary == 0)
+FP <- sum(binary_predictions == 1 & test_data$SalePriceBinary == 0)
+FN <- sum(binary_predictions == 0 & test_data$SalePriceBinary == 1)
+
+
+accuracy <- (TP + TN) / sum(c(TP, TN, FP, FN))
+cat("Accuracy for LM model:", accuracy, "\n")
+
+
+sensitivity <- TP / (TP + FN)
+cat("Sensitivity for LM model:", sensitivity, "\n")
+
+
+precision <- TP / (TP + FP)
+cat("Precision for LM model:", precision, "\n")
+
+
+specificity <- TN / (TN + FP)
+cat("Specificity for LM model:", specificity, "\n")
+
+```
+
+In almost 90.56% of cases, the model accurately predicts SalePrice, demonstrating its excellent overall accuracy.
+
+Additionally, the precision and sensitivity are high, suggesting that the system is doing well in finding affirmative situations.
+
+It appears that the model may have trouble accurately recognizing negative cases because of its very low specificity.
+
+### Tree Model
+
+```{r}
+reg_model = rpart(SalePrice ~ ., data = data)
+
+summary(reg_model)
+
+```
+
+
+```{r}
+
+dt_model = rpart(formula = SalePrice ~ LotArea + OverallQual + YearBuilt +  YearRemodAdd  +  BsmtFinSF1  +  BedroomAbvGr  +  TotRmsAbvGrd  +  Fireplaces  +  GarageArea, data = data, method = "anova", control = rpart.control(minsplit = 90))
+
+summary(dt_model)
+
+fancyRpartPlot(dt_model)
+```
+
+
+With a complexity parameter of 0.47785266, it is clear that overfitting and underfitting are not very prevalent.
+
+The variables that have the biggest effects on sale price are YearBuilt, GarageArea, OverallQual, and BsmtFinSF1.
+
+```{r}
+
+dt_predictions = predict(dt_model, data.frame(  LotArea = 10500,OverallQual = 5,YearBuilt = 1999,YearRemodAdd = 2010,BsmtFinSF1 = 700,  FullBath = 2,HalfBath = 1,BedroomAbvGr = 3, TotRmsAbvGrd = 10,Fireplaces = 1,GarageArea = 305, YrSold = 2015))
+
+cat("Tree model prediction for SalePrice is",dt_predictions, "Dollars")
+```
+
+```{r}
+threshold <- 100000
+
+data$SalePriceBinary <- ifelse(data$SalePrice > threshold, 1, 0)
+
+set.seed(123)
+
+splitIndex <- createDataPartition(data$SalePriceBinary, p = 0.8, list = FALSE)
+train_data <- data[splitIndex, ]
+test_data <- data[-splitIndex, ]
+
+tree_model <- rpart(SalePriceBinary ~ ., data = train_data)
+
+tree_predictions <- predict(tree_model, newdata = test_data)
+
+binary_tree_predictions <- ifelse(tree_predictions > threshold, 1, 0)
+
+levels_set <- c(0, 1)
+binary_tree_predictions <- factor(binary_tree_predictions, levels = levels_set)
+test_data$SalePriceBinary <- factor(test_data$SalePriceBinary, levels = levels_set)
+
+
+TP <- sum(binary_tree_predictions == 1 & test_data$SalePriceBinary == 1)
+TN <- sum(binary_tree_predictions == 0 & test_data$SalePriceBinary == 0)
+FP <- sum(binary_tree_predictions == 1 & test_data$SalePriceBinary == 0)
+FN <- sum(binary_tree_predictions == 0 & test_data$SalePriceBinary == 1)
+
+
+accuracy <- (TP + TN) / sum(c(TP, TN, FP, FN))
+cat("Accuracy for tree model:", accuracy, "\n")
+
+sensitivity <- TP / (TP + FN)
+cat("Sensitivity for tree model:", sensitivity, "\n")
+
+precision <- TP / (TP + FP)
+cat("Precision for tree model:", precision, "\n")
+
+specificity <- TN / (TN + FP)
+cat("Specificity for tree model:", specificity, "\n")
+```
+
+Given the model's incredibly low accuracy, it is likely that most of its forecasts are off.
+
+When the sensitivity is zero, it means that no positive cases were found by the model.
+
+Since there are no real positives in this situation, precision is ill-defined.
+
+Even while the model performs poorly overall, its specificity is excellent, which could indicate that it is not the right model for the task at hand.
+
+
+### Summary of Both Models
+In every parameter, the LM performs better than the Tree Model, exhibiting increased precision, sensitivity, and accuracy.
+
+Even though the Tree Model has a high specificity, it is less appropriate for the task due to serious problems with sensitivity, precision, and overall accuracy.
+
+
+### Classifying OverallQall to Class 1 and Class 0
+
+```{r}
+
+data$OverallQualClass = ifelse(data$OverallQual >= 7, 1,  0)
+
+features_class = c("LotArea", "OverallQual", "YearBuilt", "YearRemodAdd", 
+                    "BsmtFinSF1", "BedroomAbvGr", "TotRmsAbvGrd", "Fireplaces", "GarageArea")
+
+target_class = "OverallQualClass"
+
+rf_model = randomForest(data[, features_class], data[, target_class])
+
+class_predictions = predict(rf_model, newdata = data, type = "response")
+
+class_predictions = ifelse(class_predictions >= 0.5, "Class 1", "Class 0")
+
+result_table = data.frame(OverallQual = data$OverallQual, Classification = class_predictions)
+
+head(result_table)
+
+
+```
+
+The class for each dataset data point is then predicted by the algorithm using the random forest model. Next, binary values (Class 1 or Class 0) are created from the forecasts. It is given a value of 1 in the event that the OverallQual characteristic is greater than or equal to 7 and 0 in the other case.  
